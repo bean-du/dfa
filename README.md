@@ -10,7 +10,7 @@ example：
 ```go
     sensitive := []string{"王八蛋", "王八羔子"}
 
-    fda := NewFDA()
+    fda := New()
     fda.AddBadWords(sensitive)
 
     str := "你个王#八……羔子， 你就是个王*八/蛋"
