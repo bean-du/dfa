@@ -17,7 +17,7 @@ type DFA struct {
 	invalidWords map[string]struct{}
 }
 
-func NewFDA() *DFA {
+func New() *DFA {
 	f := &DFA{
 		trie:         NewTrie(),
 		replaceStr:   defaultReplaceStr,
