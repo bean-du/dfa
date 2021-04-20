@@ -6,10 +6,10 @@ type Node struct {
 	Child map[rune]*Node
 }
 
-func newNode() *Node {
+func newNode(val string) *Node {
 	return &Node{
 		IsEnd: false,
-		Value: "",
+		Value: val,
 		Child: make(map[rune]*Node),
 	}
 }
@@ -27,16 +27,16 @@ func (t *Trie) Insert(key string) {
 	curNode := t.root
 	for _, v := range key {
 		if curNode.Child[v] == nil {
-			curNode.Child[v] = newNode()
+			curNode.Child[v] = newNode(string(v))
 		}
 		curNode = curNode.Child[v]
+		curNode.Value = string(v)
 	}
 
 	if !curNode.IsEnd {
 		t.size++
 		curNode.IsEnd = true
 	}
-	curNode.Value = key
 }
 
 func (t *Trie) PrefixMatch(key string) []string {
@@ -88,7 +88,7 @@ func (t *Trie) Child(key string) *Node {
 
 func NewTrie() *Trie {
 	return &Trie{
-		root: newNode(),
+		root: newNode(""),
 		size: 0,
 	}
 }

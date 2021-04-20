@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	defaultInvalidWorlds = " ,~,!,@,#,$,%,^,&,*,(,),_,-,+,=,?,<,>,.,—,，,。,/,\\,|,《,》,？,;,:,：,',‘,；,“,"
+	defaultInvalidWorlds = " ,~,!,@,#,$,%,^,&,*,(,),_,-,+,=,?,<,>,.,—,，,。,/,\\,|,《,》,？,;,:,：,',‘,；,“,¥,·"
 	defaultReplaceStr    = "****"
 )
 
@@ -55,25 +55,40 @@ func (f *DFA) SetReplaceStr(str string) {
 	f.replaceStr = str
 }
 
-func (f *DFA) Check(txt string) ([]string, bool) {
-	_, found, b := f.check(txt, false)
-	return found, b
+func (f *DFA) Check(txt string) ([]string, []string, bool) {
+	_, found, target, b := f.check(txt, false)
+	return found, target, b
 }
 
-func (f *DFA) CheckAndReplace(txt string) (string, []string, bool) {
+func (f *DFA) CheckAndReplace(txt string) (string, []string, []string, bool) {
 	return f.check(txt, true)
 }
 
-func (f *DFA) check(txt string, replace bool) (string, []string, bool) {
+func (f *DFA) FilterInvalidChar(txt ...string) []string {
+	res := make([]string, 0, len(txt))
+	for _, s := range txt {
+		str := []rune(s)
+		for i, c := range str {
+			if _, ok := f.invalidWords[string(c)]; ok {
+				str = append(str[:i], str[i+1:]...)
+			}
+		}
+		res = append(res, string(str))
+	}
+	return res
+}
+
+func (f *DFA) check(txt string, replace bool) (dist string, found []string, target []string, b bool) {
 	var (
 		str        = []rune(txt)
 		ok         bool
-		found      []string
 		node       *Node
 		nodeMap    map[rune]*Node
 		start, tag = -1, -1
 		result     string
+		tmp        = ""
 	)
+	target = make([]string, 0, 0)
 	f.l.Lock()
 	defer f.l.Unlock()
 
@@ -89,10 +104,12 @@ func (f *DFA) check(txt string, replace bool) (string, []string, bool) {
 				if tag == 0 {
 					start = i
 				}
-
+				tmp = node.Value
 				if !node.IsEnd {
 					nodeMap = node.Child
 				} else {
+					target = append(target, tmp)
+					tmp = ""
 					found = append(found, string(str[start:i+1]))
 					if replace {
 						result = strings.Replace(result, string(str[start:i+1]), f.replaceStr, 1)
@@ -105,19 +122,18 @@ func (f *DFA) check(txt string, replace bool) (string, []string, bool) {
 					nodeMap = nil
 				}
 			} else {
-				if start != -1 {
-					i = start + 1
-				}
-
 				nodeMap = nil
 				start = -1
 				tag = -1
 			}
 		} else {
 			if node, ok = nodeMap[val]; ok {
+				tmp += node.Value
 				if !node.IsEnd {
 					nodeMap = node.Child
 				} else {
+					target = append(target, tmp)
+					tmp = ""
 					found = append(found, string(str[start:i+1]))
 					if replace {
 						result = strings.Replace(result, string(str[start:i+1]), f.replaceStr, 1)
@@ -132,5 +148,6 @@ func (f *DFA) check(txt string, replace bool) (string, []string, bool) {
 			}
 		}
 	}
-	return result, found, len(found) > 0
+	b = len(found) > 0
+	return
 }
